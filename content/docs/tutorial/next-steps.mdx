@@ -1,0 +1,43 @@
+---
+title: 6. Next Steps
+icon: Flag
+description: Validation, pagination, and hardening.
+---
+
+## Overview
+
+Great job building your first NestJS + MongoDB API! Here are ideas to continue learning and turning this demo into something more production-ready.
+
+### Add features
+
+- **Validation feedback**: Customize error messages or translate them for end users.
+- **Pagination**: Update `GET /tasks` to accept `page` and `pageSize` (see [API Standards](/docs/backend/api-standards)).
+- **Sorting & filtering**: Allow sorting by `updatedAt` or filtering by `done` status.
+- **Authentication**: Add simple JWT or API key checks to understand secure endpoints.
+- **Front-end**: Build a small web or mobile app (Flutter, React) that consumes the API.
+
+### Improve reliability
+
+- **Tests**: Write unit tests for `TasksService` (use `mongodb-memory-server` to avoid touching real data).
+- **Error handling**: Standardize responses using the error shape documented earlier.
+- **Logging**: Add the JSON logger from [Logging & Observability](/docs/backend/logging-observability) to capture errors.
+- **Config validation**: Implement the environment validation from [Configuration & Environment](/docs/backend/config-env).
+
+### Deployment practice
+
+- Follow the docs in [CI/CD](/docs/ci-cd/index) to understand how GitHub Actions trigger CircleCI and Serverless.
+- Try deploying your tutorial API to AWS using the same pipeline (use a separate stage such as `sandbox`).
+
+### Keep learning
+
+- [Official NestJS documentation](https://docs.nestjs.com/)
+- [NestJS Zero to Hero course (free on YouTube)](https://www.youtube.com/watch?v=GHTA143_b-s)
+- [MongoDB University basics course](https://learn.mongodb.com/learning-paths/mdb-basics)
+
+### Continue collaborating on GitHub
+
+- Pull the latest `main` after every merged PR to keep your local project current: `git checkout main && git pull origin main`.
+- When tackling any new feature, start from `main`, create a feature branch, and follow the same commit → push → PR → squash merge workflow you used in the tutorial.
+- Encourage teammates to leave review comments and document decisions in the PR description so future contributors understand the context.
+
+Take breaks, experiment, and share your progress with mentors or classmates. The best way to learn is by building and iterating! When you feel comfortable, explore more advanced topics like background jobs, WebSockets, or GraphQL.

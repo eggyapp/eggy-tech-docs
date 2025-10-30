@@ -1,0 +1,143 @@
+---
+title: Test Locally
+icon: FileText
+description: Verify endpoints with curl/Postman.
+---
+
+## Overview
+
+It’s time to try the API! In this step you will send requests to your running NestJS server and check how the database changes. We use `curl`/[HTTPie](https://httpie.io/) examples, but you can follow along with [Postman](https://www.postman.com/) if you prefer a visual interface.
+
+- Make sure `npm run start:dev` is still running; the server must be up.
+- Confirm MongoDB is available (Docker container running or Atlas URL configured).
+
+### 1. Create a task
+
+Choose the command that matches your tool and OS:
+
+```bash tab="HTTPie"
+http POST http://localhost:3000/tasks \
+  title="Write tutorial" description="Draft the NestJS guide"
+```
+
+```bash tab="curl · macOS/Linux"
+curl -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Write tutorial","description":"Draft the NestJS guide"}'
+```
+
+```powershell tab="curl · Windows"
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/tasks" \
+  -ContentType "application/json" \
+  -Body '{"title":"Write tutorial","description":"Draft the NestJS guide"}'
+```
+
+Expected response (`201 Created`):
+
+```json
+{
+  "_id": "6659f0f58f2a3f0f21c1b74d",
+  "title": "Write tutorial",
+  "description": "Draft the NestJS guide",
+  "done": false,
+  "createdAt": "2025-05-28T12:34:56.789Z",
+  "updatedAt": "2025-05-28T12:34:56.789Z",
+  "__v": 0
+}
+```
+
+Copy the `_id` value—it’s the MongoDB identifier we’ll use in later steps.
+
+### 2. List tasks
+
+```bash tab="HTTPie"
+http GET http://localhost:3000/tasks
+```
+
+```bash tab="curl · macOS/Linux"
+curl http://localhost:3000/tasks
+```
+
+```powershell tab="curl · Windows"
+Invoke-RestMethod -Method Get -Uri "http://localhost:3000/tasks"
+```
+
+You should see an array with the task you just created. If the array is empty, double-check that POST succeeded.
+
+### 3. Get a single task
+
+```bash tab="HTTPie"
+http GET http://localhost:3000/tasks/<ID_FROM_PREVIOUS_STEP>
+```
+
+```bash tab="curl · macOS/Linux"
+curl http://localhost:3000/tasks/<ID_FROM_PREVIOUS_STEP>
+```
+
+```powershell tab="curl · Windows"
+Invoke-RestMethod -Method Get -Uri "http://localhost:3000/tasks/<ID_FROM_PREVIOUS_STEP>"
+```
+
+If you replace `<ID_FROM_PREVIOUS_STEP>` with an ID that does not exist, the API returns a `404` with the message `Task <id> not found`.
+
+### 4. Update a task
+
+```bash tab="HTTPie"
+http PATCH http://localhost:3000/tasks/<ID> done:=true
+```
+
+```bash tab="curl · macOS/Linux"
+curl -X PATCH http://localhost:3000/tasks/<ID> \
+  -H "Content-Type: application/json" \
+  -d '{"done": true}'
+```
+
+```powershell tab="curl · Windows"
+Invoke-RestMethod -Method Patch -Uri "http://localhost:3000/tasks/<ID>" \
+  -ContentType "application/json" \
+  -Body '{"done": true}'
+```
+
+### 5. Delete a task
+
+```bash tab="HTTPie"
+http DELETE http://localhost:3000/tasks/<ID>"
+```
+
+```bash tab="curl · macOS/Linux"
+curl -X DELETE http://localhost:3000/tasks/<ID>
+```
+
+```powershell tab="curl · Windows"
+Invoke-RestMethod -Method Delete -Uri "http://localhost:3000/tasks/<ID>"
+```
+
+The server responds with `204 No Content`. If you try to delete again, you’ll get a 404—exactly what we want.
+
+### 6. View data in MongoDB
+
+- **[mongosh](https://www.mongodb.com/docs/mongodb-shell/)**:
+
+  ```bash
+  mongosh "mongodb://localhost:27017/tasks" --eval 'db.tasks.find().pretty()'
+  ```
+
+- **[MongoDB Compass](https://www.mongodb.com/products/compass)** (GUI): connect using the same URI and view the `tasks` collection.
+
+### Testing with Postman (optional)
+
+1. Open Postman and create a new request.
+2. Choose the HTTP method (POST/GET/PATCH/DELETE) and paste the URL.
+3. For POST/PATCH, select “Body → raw → JSON” and paste the JSON payload.
+4. Send the request and inspect the response.
+
+### Troubleshooting
+
+| Issue | Possible fix |
+|-------|--------------|
+| `ECONNREFUSED` | Server not running. Start it with `npm run start:dev`. |
+| `connect ECONNREFUSED 127.0.0.1:27017` | MongoDB not running (start Docker or check Atlas). |
+| `Task <id> not found` on POST | Maybe you’re hitting PATCH/GET with wrong ID—recopy from POST response. |
+| Validation error (`title must be text`) | Ensure the request body matches the DTO requirements. |
+
+If everything works, you now have a functioning REST API! Continue to **Debugging Basics** for tips on solving common issues, then visit **Next Steps** for ideas on where to go from here.

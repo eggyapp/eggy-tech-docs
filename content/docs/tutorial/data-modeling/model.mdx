@@ -1,0 +1,85 @@
+---
+title: Model
+icon: FileText
+description: Define the Task schema and Nest module wiring.
+---
+
+## Why this matters
+
+To store data in MongoDB we define a **schema** (how the data looks). In the next page we will introduce DTOs (data transfer objects) and validation to keep inputs clean.
+
+### 1. Create the Task schema
+
+Create a new file `src/tasks/task.schema.ts`:
+
+```ts title="src/tasks/task.schema.ts"
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+
+@Schema({ timestamps: true })
+export class Task {
+  @Prop({ required: true, trim: true })
+  title!: string;
+
+  @Prop({ trim: true })
+  description?: string;
+
+  @Prop({ default: false })
+  done!: boolean;
+}
+
+export type TaskDocument = Task & Document;
+export const TaskSchema = SchemaFactory.createForClass(Task);
+```
+
+- `@Schema` turns the class into something Mongoose can understand.
+- `timestamps: true` automatically adds `createdAt` and `updatedAt` fields.
+- `@Prop` describes each field.
+
+### 2. Register the schema with Nest
+
+Create `src/tasks/tasks.module.ts`:
+
+```ts title="src/tasks/task.module.ts"
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Task, TaskSchema } from './task.schema';
+
+@Module({
+  imports: [MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }])], // [!code highlight]
+  controllers: [],
+  providers: [],
+  exports: [],
+})
+export class TasksModule {}
+```
+
+Then open `src/app.module.ts` and add `TasksModule` to the `imports` array:
+
+```ts title="src/app.module.ts"
+...
+import { TasksModule } from './tasks/tasks.module'; // [!code ++]
+
+@Module({
+  imports: [
+    ...,
+    TasksModule // [!code ++]
+  ], 
+  controllers: [],
+  providers: [],
+})
+...
+```
+
+Next, continue to **DTOs & Validation** to create DTO classes and enforce clean inputs. We’ll return to `TasksModule` later to register the service and controller once they exist.
+
+### Commit your schema updates
+
+After creating the schema and wiring it into the module, record the changes:
+
+```bash
+git add src/tasks/task.schema.ts src/tasks/tasks.module.ts src/app.module.ts
+git commit -m "feat: add task schema"
+```
+
+Keep committing as you progress so the eventual pull request tells a clear story.

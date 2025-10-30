@@ -1,0 +1,70 @@
+---
+title: Architecture
+icon: FileText
+description: NestJS as a single AWS Lambda architecture.
+---
+
+## Overview
+
+Our backend packages a NestJS HTTP application into a single AWS Lambda that sits behind Amazon API Gateway. This approach keeps the infrastructure surface small while still supporting REST APIs and background tasks through additional routes or future Lambdas. CircleCI deploys the bundle via the Serverless Framework using the defaults below.
+
+- **Runtime**: `nodejs20.x`
+- **Architecture**: `arm64`
+- **Region**: `ap-southeast-2`
+- **Deployment toolchain**: GitHub Action → CircleCI → Serverless Framework → AWS Lambda/API Gateway
+
+<Callout type="info">
+These defaults balance cold start performance and cost. If you need x86_64 for native dependencies, update the Serverless config and document the change in CI/CD → Serverless Deploy.
+</Callout>
+
+## Request handling flow
+
+1. API Gateway receives the client request and invokes the Lambda handler.
+2. On first invocation (cold start) the Nest application bootstraps, loads modules, and connects to MongoDB.
+3. Subsequent (warm) invocations reuse the cached Nest instance and database connection, reducing latency.
+4. Controllers resolve the request, using providers/services that encapsulate domain logic.
+5. Responses are returned through API Gateway with consistent REST status codes defined in [API Standards](/docs/backend/api-standards).
+
+```ts
+// lambda.ts
+import { Handler } from "aws-lambda";
+import serverlessExpress from "@codegenie/serverless-express";
+import { bootstrap } from "./main";
+
+let cachedHandler: Handler | undefined;
+
+export const handler: Handler = async (event, context) => {
+  if (!cachedHandler) {
+    const app = await bootstrap();
+    cachedHandler = serverlessExpress({
+      app: app.getHttpAdapter().getInstance(),
+    });
+  }
+
+  return cachedHandler(event, context);
+};
+```
+
+The bootstrap function lives in `main.ts` and mirrors the local Nest setup. Serverless Framework points `handler` to this file so the Lambda runtime executes it.
+
+## Packaging and deployment
+
+- **Bundler**: `serverless-esbuild` keeps the output small and tree-shakes unused Nest providers.
+- **Layers**: Shared binaries or SDKs can be extracted into Lambda Layers if bundle size grows.
+- **Environment variables**: Serverless injects stage-specific variables defined in `serverless.yml`. See [Configuration & Environment](/docs/backend/config-env) for details.
+- **Observability hooks**: Wrap Nest's logger to emit structured JSON so CloudWatch Logs aggregate per invocation. Traces can be added later with AWS X-Ray or OpenTelemetry.
+
+Deployment is triggered from CircleCI once the GitHub Action signals a successful build:
+
+1. GitHub Action on `main` or `develop` pushes pipeline metadata to CircleCI.
+2. CircleCI installs dependencies, runs tests, and bundles the Lambda.
+3. `serverless deploy --stage <env>` publishes the function and updates API Gateway.
+4. Post-deploy smoke tests hit health endpoints to confirm success.
+
+Refer to [CI/CD → Serverless Deploy](/docs/ci-cd/serverless-deploy) for the pipeline configuration.
+
+## Scaling and extension
+
+- **Concurrency**: Lambda scales horizontally per request. Throttle via API Gateway or reserved concurrency when protecting downstream systems.
+- **Long-running work**: Offload heavy processing to dedicated Lambdas or queues to keep REST latency low.
+- **Breaking out services**: When the single Lambda becomes a bottleneck, duplicate this pattern for additional bounded contexts and route traffic via API Gateway paths.

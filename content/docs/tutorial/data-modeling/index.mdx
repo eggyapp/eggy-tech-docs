@@ -1,0 +1,77 @@
+---
+title: 3. Data Modeling
+icon: Database
+description: Shape your data and prepare validation.
+---
+
+## Models in NestJS
+
+### What is a model?
+
+A **model** is a representation of how the data lives in the database. In our project it takes the form of a TypeScript class, mirroring each field in the MongoDB collection so we can read and write documents using familiar language-level objects instead of raw JSON.
+
+### Why models matter in Nest
+
+- They give controllers/services a typed contract for what a task looks like.
+- They centralize database rules (required fields, defaults) so you don’t duplicate checks across the codebase.
+- Combined with DTOs, they provide both **structure** (model) and **input validation** (DTO) around your data.
+
+## MongoDB fundamentals
+
+- MongoDB stores data as flexible JSON-like **documents** inside collections (similar to folders).
+- Documents in the same collection can have different fields, though we keep them consistent with a schema.
+- Queries use JavaScript-style objects instead of SQL strings.
+
+### SQL vs. MongoDB at a glance
+
+| SQL database | MongoDB counterpart |
+|--------------|---------------------|
+| Table | Collection |
+| Row | Document |
+| Column | Field |
+| JOIN | Embedded documents or manual queries |
+
+SQL schemas are rigid—you must define every column up front. MongoDB is more flexible, which is powerful but risky without guardrails. Our models + DTOs give Mongo the structure SQL tables get for free.
+
+### When to reach for each database
+
+- **Popular SQL options:** PostgreSQL, MySQL, SQL Server. They shine when you need strict relational integrity, complex joins, or transactional guarantees (financial apps, reporting systems).
+- **Why we use MongoDB here:** Task data is document-shaped, evolves quickly, and benefits from flexible schemas. MongoDB handles nested objects naturally, and pairing it with Mongoose gives us just enough structure to stay safe.
+
+Think of SQL as the spreadsheet that always enforces every column, while MongoDB is a flexible notebook—you can add fields as requirements change. Our tooling (models + DTOs) keeps that notebook organized.
+
+## Mongoose as our ODM
+
+- **ORM/ODM** stands for Object-Relational/Object-Document Mapper—tools that translate between database records and TypeScript objects.
+- Because MongoDB is a document database, we use an ODM called **Mongoose**. It gives us:
+  - Schema definitions (`@Schema`, `@Prop`) so every document follows the shape we expect.
+  - Built-in validation and defaults before data hits the database.
+  - Helpers for common tasks like timestamps, middleware (hooks), and lean queries.
+
+### How we query MongoDB
+
+Mongoose wraps the native MongoDB query syntax. You still use Mongo-style filters (`find({ done: false })`, `findById(id)`), but with strong typing and Nest-friendly error handling. We’ll keep queries simple for this tutorial, yet the same methods support more advanced operators (sort, limit, aggregation) if you need them later.
+
+<Callout title="Beginner tip">
+If you ever get lost in Mongoose chain methods, remember they map closely to the shell commands in the [MongoDB docs](https://www.mongodb.com/docs/v7.0/reference/method/db.collection.find/). The big difference is you now write them in TypeScript.
+</Callout>
+
+### Further reading
+
+- [MongoDB Data Modeling Basics](https://www.mongodb.com/docs/manual/core/data-modeling-introduction/) — official guide to structuring documents and relationships.
+- [Mongoose Schemas & Models](https://mongoosejs.com/docs/models.html) — deeper dive into schema features, middleware, and lean queries.
+- [Mapping Relational Databases to MongoDB](https://www.mongodb.com/developer/products/mongodb/schema-design-relational-nosql/) — how SQL concepts translate to MongoDB patterns.
+
+After reviewing these ideas, open **Model** to implement the `Task` schema and **DTOs & Validation** to turn Zod definitions into Nest-ready DTO classes.
+
+## Version control: branch for Chapter 3
+
+Before editing files, pull the latest `main` and create a new branch:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/data-modeling
+```
+
+Commit the schema and DTO changes incrementally; you’ll push and open a PR once the chapter is complete.

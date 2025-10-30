@@ -1,0 +1,96 @@
+---
+title: Controllers & Routes
+icon: FileText
+description: Expose CRUD operations through HTTP endpoints.
+---
+
+## Overview
+
+Controllers connect HTTP requests to your service methods. In this step we build a `TasksController` that forwards calls to `TasksService`.
+
+### 1. Create the controller
+
+Create `src/tasks/tasks.controller.ts`:
+
+```ts title="src/tasks/tasks.controller.ts"
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
+
+  @Get()
+  findAll() {
+    return this.tasksService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.tasksService.findOne(id);
+  }
+
+  @Post()
+  create(@Body() dto: CreateTaskDto) {
+    return this.tasksService.create(dto);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
+    return this.tasksService.update(id, dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.tasksService.remove(id);
+  }
+}
+```
+
+### 2. Wire controller into the module
+
+Open `src/tasks/tasks.module.ts` and ensure the controller is listed:
+
+```ts title="src/tasks/tasks.module.ts"
+...
+import { TasksController } from './tasks/task.controller'; // [!code ++]
+
+@Module({
+  imports: [MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }])],
+  controllers: [] // [!code --]
+  controllers: [TasksController], // [!code ++]
+  providers: [TasksService],
+})
+export class TasksModule {}
+```
+
+### 3. Confirm available routes
+
+- `GET /tasks` → list tasks
+- `GET /tasks/:id` → fetch a single task
+- `POST /tasks` → create a task
+- `PATCH /tasks/:id` → update title/description/done
+- `DELETE /tasks/:id` → remove a task
+
+<Callout type="info">**Tip**: While `npm run start:dev` is running, NestJS logs each mapped route (for example, `Mapped {/tasks, GET}`). Scroll back in the terminal to confirm which endpoints are registered.</Callout>
+
+Keep `npm run start:dev` running so the controller reloads automatically. You’re ready for **Test Locally** next.
+
+### Commit controller updates
+
+```bash
+git add src/tasks/tasks.controller.ts src/tasks/tasks.module.ts
+git commit -m "feat: expose task controller routes"
+```
+
+### Push your branch and open a pull request
+
+When the chapter is complete and tests pass, push the branch and open the pull request:
+
+```bash
+git push -u origin feature/crud-implementation
+```
+
+Summarize the changes, request review, and use **Squash and merge** once approved so the CRUD work lands on `main` as a single commit. Pull `main` locally afterward before starting Chapter 5.

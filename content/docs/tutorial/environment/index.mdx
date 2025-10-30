@@ -1,0 +1,41 @@
+---
+title: 2. Environment & Config
+icon: Settings
+description: Understand environment variables and runtime configuration.
+---
+
+## Why configuration matters
+
+Every environment (local development, testing, production) needs different credentials and URLs. Environment variables let us change behavior without editing source code.
+
+## Environment variable basics
+
+- Environment variables are key/value pairs that live outside of your code. Example: `MONGODB_URI=mongodb://localhost:27017/tasks`.
+- NestJS reads them through `process.env`. We’ll pass these values into `MongooseModule.forRoot` so the app knows which MongoDB to connect to.
+- Never hardcode secrets (passwords, API keys) inside `.ts` files. Store them in environment variables instead.
+
+## Using `.env` files
+
+- `.env` files are plain text files you load in development to set environment variables automatically.
+- We add a non-secret template named `.env.example` so new developers know which variables they must define.
+- Local files such as `.env.development.local` stay out of version control and contain your personal values.
+- In production, we use AWS Parameter Store / Secrets Manager (see [Configuration & Environment](/docs/backend/config-env)).
+
+## Local vs. cloud MongoDB
+
+- Run MongoDB locally via Docker for quick feedback. You will create `docker-compose.dev.yml` in this chapter.
+- Use MongoDB Atlas when you can’t run Docker or want a hosted option. You’ll paste the Atlas connection string into the `.env` files created here.
+
+After reviewing these ideas, continue to **Prepare MongoDB** to stand up Docker or Atlas and capture your `.env` settings, then move on to **Connect MongoDB** for the NestJS wiring.
+
+## Version control: branch for Chapter 2
+
+Run the following commands before making changes so your work lives on a dedicated branch that can become a pull request:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/environment-config
+```
+
+Commit as you go; you’ll push this branch and open a PR after finishing the chapter.

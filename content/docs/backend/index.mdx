@@ -1,0 +1,47 @@
+---
+title: Backend
+icon: FileText
+description: Backend documentation.
+---
+
+## Overview
+
+Eggy Backend runs a NestJS application as a single AWS Lambda behind API Gateway, with MongoDB as the primary data store via `@nestjs/mongoose`. Deployments are handled by Serverless Framework on AWS, executed from CircleCI, which is triggered by a GitHub Action.
+
+- Single Lambda simplifies deployment and infra while supporting REST APIs.
+- MongoDB + Mongoose provides flexible schemas and rapid iteration.
+- CI/CD: GitHub → CircleCI → Serverless deploy to AWS.
+
+### Request lifecycle (Lambda)
+
+1. Client calls REST endpoint on API Gateway.
+2. API Gateway invokes the Lambda (NestJS app).
+3. On a cold start, the Nest app boots, modules initialize, and a MongoDB connection is established.
+4. The request is routed to the appropriate controller/route handler.
+5. The response is returned via API Gateway to the client.
+6. On warm starts, the same Lambda process is reused, reducing latency and reusing the DB connection.
+
+### Cold starts (basics)
+
+- Runtime: Node.js 20 on arm64 is a good default (lower cost, good perf).
+- Bundle size and dependency count affect cold starts; keep the package lean.
+- Memory size affects CPU during init; more memory can reduce cold start time.
+- Keep DB connections and app instances reusable between invocations when possible.
+
+### Where to next
+
+- See Architecture for details of the Lambda/Nest integration and packaging.
+- See Data Modeling for `@nestjs/mongoose` schema guidance.
+- See Local Development for running locally with MongoDB (Docker) or Atlas.
+- See CI/CD → Serverless Deploy for the deployment pipeline and environments.
+
+<Mermaid chart={`graph TD
+  A[Client/Frontend] --> B[API Gateway]
+  B --> C["AWS Lambda<br>(NestJS app)"]
+  C --> D[MongoDB]
+  subgraph CI/CD
+    E[GitHub Action] --> F[CircleCI]
+    F --> G[Serverless Deploy]
+  end
+  G --> C
+`}/>

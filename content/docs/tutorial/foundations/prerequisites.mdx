@@ -1,0 +1,93 @@
+---
+title: Prerequisites
+icon: FileText
+description: Tools and accounts required before starting.
+---
+
+## Overview
+
+This tutorial assumes you are comfortable typing commands in a terminal but may be brand new to backend development. We explain each step and link to longer articles if you want to dive deeper.
+
+### Time commitment
+
+- **Estimated duration**: 90–120 minutes
+- Work through the chapters in order: Foundations → Environment & Configuration → Data Modeling → CRUD Implementation → Testing & Debugging → Next Steps
+
+### Required tools
+
+| Tool | Why we need it | Install link |
+|------|----------------|--------------|
+| **Node.js 20 LTS** | Runs NestJS and command-line tooling | [nodejs.org](https://nodejs.org/en/download) |
+| **npm** | Package manager that ships with Node.js | Included with Node installer |
+| **Nest CLI** | Generates project files and helps run the server | `npx @nestjs/cli@latest --help` or `npm install -g @nestjs/cli` |
+| **Git** | Version control; optional but recommended | [git-scm.com](https://git-scm.com/downloads) |
+| **GitHub account** | Hosts your repository and PRs | [github.com/signup](https://github.com/signup) |
+| **Code editor** | Write code (VS Code recommended) | [code.visualstudio.com](https://code.visualstudio.com/) |
+| **MongoDB** | Database. Use Docker or MongoDB Atlas (cloud) | See options below |
+| **API client** | Test endpoints (curl, [HTTPie](https://httpie.io/), or [Postman](https://www.postman.com/)) | Optional |
+
+> **Tip**: If you haven’t installed command-line tools before, follow the official guides linked above. Each installer walks you through the process step-by-step.
+
+### Check your versions
+
+Open a terminal and confirm everything is available:
+
+```bash tab="macOS/Linux"
+node --version    # should print v20.x.x
+npm --version     # any 10.x+ version
+npx --version     # checks npx availability
+git --version
+```
+
+```powershell tab="Windows PowerShell"
+node --version    # should print v20.x.x
+npm --version     # any 10.x+ version
+npx --version     # checks npx availability
+git --version
+```
+
+If `npx` or `nest` is not found, it simply means you did not install the CLI globally. That’s okay—you can still run `npx @nestjs/cli ...` in the next steps.
+
+### Choose your MongoDB path
+
+You need one of the following:
+
+1. **Docker container**
+   - Install Docker Desktop
+   - Run the compose file provided in [Local Development](/docs/backend/local-development)
+   <Callout title="Pros">
+   - Works offline once Docker images are downloaded.
+   - Easy to reset—stop the container and start fresh if you break something.
+   - Matches typical professional local-development setups, so skills transfer directly.
+   </Callout>
+
+   <Callout title="Cons" type="error">
+   - Docker Desktop is a large install and can feel overwhelming the first time.
+   - Needs sufficient disk space and CPU/RAM; older laptops may struggle.
+   - Container networking adds extra terminology (ports, volumes) to learn.
+   </Callout>
+2. **MongoDB Atlas free tier**
+   - Create a free account at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas/register)
+   - Set up a Cluster (M0 free tier) and create a database user
+   - Use the connection string later in the setup page
+   <Callout title="Pros">
+   - No local installs beyond the app itself—helpful on school-issued or low-spec hardware.
+   - Web UI shows collections/documents visually, which aids understanding.
+   - Teaches you how real production databases authenticate and whitelist IPs.
+   </Callout>
+
+   <Callout title="Cons" type="error">
+   - Requires an internet connection; slow Wi-Fi makes requests feel laggy.
+   - Initial setup (account, project, network access) has several screens to complete.
+   - Copying the connection string precisely is easy to mess up; mistakes create confusing auth errors.
+   </Callout>
+
+We will remind you when to switch between local Docker and Atlas.
+
+### Suggested reading (optional)
+
+- [What is an API?](https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Client-side_web_APIs/Introduction) — MDN introduction
+- [NestJS First Steps](https://docs.nestjs.com/first-steps) — official framework overview
+- [MongoDB Basics](https://www.mongodb.com/basics) — quick database primer
+
+Once your tools are ready, continue to **Setup** to create the project structure.

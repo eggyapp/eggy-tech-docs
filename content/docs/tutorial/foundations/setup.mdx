@@ -1,0 +1,86 @@
+---
+title: Project Setup
+icon: FileText
+description: Initialize NestJS project and connect MongoDB.
+---
+
+## Overview
+
+In this step you create a brand-new NestJS project, add MongoDB support, and confirm everything runs. Every command is followed by a short explanation so you understand what just happened.
+
+### 1. Create a fresh folder (optional)
+
+Pick a place on your computer to hold the tutorial project. In the terminal:
+
+```bash tab="macOS/Linux"
+mkdir nest-mongo-tutorial
+cd nest-mongo-tutorial
+```
+
+```powershell tab="Windows PowerShell"
+mkdir nest-mongo-tutorial
+Set-Location nest-mongo-tutorial
+```
+
+### 2. Generate a Nest project
+
+Use the Nest CLI to scaffold the project. The `nest new` command asks for a project name and installs dependencies.
+
+```bash tab="macOS/Linux"
+npx @nestjs/cli new task-api
+cd task-api
+```
+
+```powershell tab="Windows PowerShell"
+npx @nestjs/cli new task-api
+Set-Location task-api
+```
+
+- `npx` downloads the CLI temporarily so you don’t need it globally.
+- When prompted for the package manager choose **npm**.
+
+### 3. Install dependencies (automatically)
+
+The Nest CLI runs `npm install` for you. When the command finishes you should see a `Successfully created project` message. If installation fails (for example because you were offline), run `npm install` manually inside the project folder.
+
+### 4. Run the starter app
+
+Check that everything works before adding custom code:
+
+```bash tab="macOS/Linux"
+npm run start:dev
+```
+
+```powershell tab="Windows PowerShell"
+npm run start:dev
+```
+
+- `start:dev` uses the Nest CLI dev server to watch files and restart automatically.
+- The console should print `Nest application successfully started`.
+- Visit [http://localhost:3000](http://localhost:3000) to see the default “Hello World” response.
+
+When you’re done, press `Ctrl+C` (or `Cmd+C`) in the terminal to stop the server.
+
+### 5. Initialize Git and push to GitHub
+
+Set up version control before adding custom code:
+
+```bash
+git init
+git status
+git add .
+git commit -m "chore: bootstrap NestJS project"
+```
+
+1. Create a new GitHub repository (no template, no README) at [github.com/new](https://github.com/new).
+2. Follow the post-creation instructions to add the remote, for example:
+
+   ```bash
+   git remote add origin https://github.com/<your-username>/task-api.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+You now have a clean `main` branch synced with GitHub. Future chapters will build on this starting point.
+
+Next, head to **Project Tour** to learn what Nest generated for you.

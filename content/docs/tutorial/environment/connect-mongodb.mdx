@@ -1,0 +1,103 @@
+---
+title: Connect MongoDB
+icon: FileText
+description: Install database packages and configure environment variables.
+---
+
+## Goal for this step
+
+Set up MongoDB dependencies, create environment files, and configure Nest so the app can talk to the database.
+
+### 1. Install MongoDB + validation libraries
+
+- `npm install` these packages so Nest can talk to MongoDB, validate inputs, and read `.env` files:
+
+```bash tab="macOS/Linux"
+npm install @nestjs/mongoose mongoose nestjs-zod zod @nestjs/config
+```
+
+```powershell tab="Windows PowerShell"
+npm install @nestjs/mongoose mongoose nestjs-zod zod @nestjs/config
+```
+
+- `@nestjs/mongoose` is the Nest bridge for MongoDB.
+- `mongoose` is the official MongoDB driver.
+- `nestjs-zod` integrates [Zod](https://zod.dev) with Nest so we can define DTOs using schemas.
+- `@nestjs/config` loads `.env` files automatically so `process.env` has the values you just captured.
+
+### 2. Confirm your `.env` files
+
+You should already have `.env.example` and `.env.development.local` from the **Prepare MongoDB** step. Double-check they contain the right connection string for the option you chose:
+
+- Docker users keep `USE_ATLAS=false` and rely on the default `MONGODB_URI`.
+- Atlas users set `USE_ATLAS=true` and paste the long connection string into `MONGODB_URI_ATLAS`.
+
+If you skipped the previous page, go back and complete those steps before continuing.
+
+### 3. Configure AppModule
+
+Edit `src/app.module.ts` so Nest loads environment files **before** reading them and falls back sensibly.
+
+```ts title="src/app.module.ts"
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config'; // [!code ++]
+import { MongooseModule } from '@nestjs/mongoose'; // [!code ++]
+
+@Module({
+  imports: [
+    // Module to load environment variables // [!code ++]
+    ConfigModule.forRoot({ // [!code ++]
+      isGlobal: true, // [!code ++]
+      envFilePath: ['.env.development.local', '.env'], // [!code ++]
+    }), // [!code ++]
+    // Module to connect to MongoDB // [!code ++]
+    MongooseModule.forRootAsync({ // [!code ++]
+      inject: [ConfigService], // [!code ++]
+      useFactory: (config: ConfigService) => { // [!code ++]
+        const useAtlas = config.get<string>('USE_ATLAS') === 'true'; // [!code ++]
+        const uri = useAtlas // [!code ++]
+          ? config.get<string>('MONGODB_URI_ATLAS') // [!code ++]
+          : config.get<string>('MONGODB_URI'); // [!code ++]
+// [!code ++]
+        if (!uri) { // [!code ++]
+          throw new Error('Missing MongoDB URI. Check your .env values.'); // [!code ++]
+        } // [!code ++]
+// [!code ++]
+        return { uri }; // [!code ++]
+      }, // [!code ++]
+    }), // [!code ++]
+  ],
+  controllers: [],
+  providers: [],
+})
+export class AppModule {}
+```
+
+<Callout title="Why forRootAsync?" type="info">
+`process.env` is evaluated when the file loads, which happens **before** `ConfigModule.forRoot()` runs. Wrapping Mongoose in `forRootAsync` ensures the config service has already loaded your `.env` values when we compute the URI.
+</Callout>
+
+For now the module only connects to MongoDB. Later pages will add new modules and controllers.
+
+With MongoDB running and `AppModule` wired up (including the config loader), you are ready to create schemas. Continue to **Model** to define the Task collection.
+
+### Commit your AppModule changes
+
+Before pushing, capture the configuration updates you just made:
+
+```bash
+git add src/app.module.ts
+git commit -m "feat: configure mongodb connection"
+```
+
+### Push your branch and open a pull request
+
+Stay on your `feature/environment-config` branch and push it to GitHub:
+
+```bash
+git push -u origin feature/environment-config
+```
+
+Then open a pull request targeting `main`. Add a short summary (what changed, any screenshots of `.env` samples) and request a teammate review. When reviewers approve, choose **Squash and merge** so the entire branch becomes a single commit on `main` (for example, `feat: configure environment & mongodb`).
+
+Once merged, pull the latest `main` locally before starting the next chapter.

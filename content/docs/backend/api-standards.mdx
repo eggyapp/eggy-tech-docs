@@ -1,0 +1,90 @@
+---
+title: API Standards
+icon: FileText
+description: REST conventions, status codes, and error shape.
+---
+
+## Overview
+
+Our APIs follow conventional REST practices so clients can predict behavior. Keep the rules below in mind when adding resources or endpoints.
+
+### Resource design
+
+- Use plural nouns for collections: `/tasks`, `/users`.
+- Use kebab-case for compound nouns: `/access-tokens`.
+- Nest sub-resources only when necessary (`/projects/:id/tasks`). Otherwise include foreign keys in the payload and filter.
+- Prefer query parameters for filtering (`/tasks?done=true`).
+
+### HTTP methods
+
+| Method | Purpose | Notes |
+|--------|---------|-------|
+| `GET /tasks` | List resources | Support pagination + filters |
+| `GET /tasks/:id` | Retrieve single resource | Return `404` if not found |
+| `POST /tasks` | Create resource | Return `201` with created entity |
+| `PATCH /tasks/:id` | Partial update | Use DTOs with optional fields |
+| `DELETE /tasks/:id` | Remove resource | Return `204` with empty body |
+
+### Status codes
+
+- `200 OK`: Successful read/update with response body.
+- `201 Created`: Resource created; include `Location` header when possible.
+- `204 No Content`: Successful delete/update without body.
+- `400 Bad Request`: Validation failure or malformed payload.
+- `401 Unauthorized`: Missing/invalid auth (future enhancement).
+- `403 Forbidden`: Authenticated but not allowed (future enhancement).
+- `404 Not Found`: Resource missing.
+- `409 Conflict`: Duplicate keys / constraint violation.
+- `422 Unprocessable Entity`: Semantic validation errors.
+- `500 Internal Server Error`: Unexpected server issues (log with trace ID).
+
+### Error response shape
+
+Return JSON with a consistent shape so clients can render messages:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "title must be a string",
+    "details": [
+      { "field": "title", "message": "title must be a string" }
+    ],
+    "traceId": "${TRACE_ID}"
+  }
+}
+```
+
+- Set `TRACE_ID` via middleware (see [Logging & Observability](/docs/backend/logging-observability)).
+- Use machine-readable `code` values (e.g., `TASK_DUPLICATE`).
+- For multiple errors, populate `details` array.
+
+### Pagination & sorting
+
+- Query parameters: `?page=1&pageSize=20&sort=-updatedAt`.
+- Response envelope:
+
+  ```json
+  {
+    "data": [/* tasks */],
+    "meta": {
+      "page": 1,
+      "pageSize": 20,
+      "total": 57
+    }
+  }
+  ```
+
+- Keep defaults small (20) to control Lambda execution time.
+- Support cursor-based pagination when collections grow large.
+
+### Versioning
+
+- Use URL-based versioning if a breaking change is needed (`/v2/tasks`).
+- Announce deprecations in release notes and update docs here.
+- Maintain compatibility windows for at least one quarter before removing old versions.
+
+### OpenAPI & documentation
+
+- Document new endpoints with OpenAPI decorators (`@ApiTags`, `@ApiResponse`) to auto-generate docs later.
+- Keep examples up to date so the junior tutorial remains accurate.

@@ -1,0 +1,90 @@
+---
+title: Configuration & Environment
+icon: FileText
+description: Environment variables, stages, and secrets.
+---
+
+## Overview
+
+Configuration is managed via environment variables per deployment stage. Serverless Framework injects values from `serverless.yml` (and stage-specific files), while local development uses `.env` files loaded by Nest. Keep secrets in AWS Parameter Store or Secrets Manager—never commit them.
+
+### Environment stages
+
+| Stage | Branch trigger | AWS account | MongoDB | Notes |
+|-------|----------------|-------------|---------|-------|
+| `dev` | `develop`      | Shared dev  | Atlas `dev` or Docker | Feature verification |
+| `prod`| `main`         | Production  | Atlas `prod`          | Customer traffic |
+
+- Feature branches deploy locally only (no auto deploy).
+- Custom stages (e.g., `qa`) can be added; document them here.
+
+### Required variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `MONGODB_URI` | Connection string for MongoDB | `mongodb://localhost:27017/tasks` |
+| `MONGODB_URI_ATLAS` | Optional Atlas connection (used via tutorial toggle) | `mongodb+srv://...` |
+| `NODE_ENV` | `development` or `production` | `production` |
+| `LOG_LEVEL` | Nest logger level | `debug` / `info` |
+| `JWT_PUBLIC_KEY` | If auth integrated later | PEM string/parameter reference |
+
+Store secrets in:
+
+- **Dev**: `.env.development.local` (gitignored) or AWS Parameter Store using `sls param`.
+- **Prod**: AWS Secrets Manager referenced via `${ssm:/service/prod/MONGODB_URI}`.
+
+### Local loading
+
+Use `@t3-oss/env-core` (already installed) or `dotenv` to load `.env` files.
+
+```ts
+// env.ts
+import { createEnv } from "@t3-oss/env-core";
+
+export const env = createEnv({
+  server: {
+    MONGODB_URI: {
+      devDefault: "mongodb://localhost:27017/tasks",
+      input: process.env.MONGODB_URI,
+    },
+    LOG_LEVEL: {
+      input: process.env.LOG_LEVEL ?? "debug",
+    },
+  },
+  runtimeEnv: process.env,
+});
+```
+
+Then inject into Nest's config module:
+
+```ts
+ConfigModule.forRoot({
+  isGlobal: true,
+  validationSchema: z.object({
+    MONGODB_URI: z.string().url(),
+    LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]),
+  }),
+});
+```
+
+### Serverless configuration
+
+In `serverless.yml`, define stage-specific variables:
+
+```yaml
+provider:
+  name: aws
+  runtime: nodejs20.x
+  architecture: arm64
+  environment:
+    MONGODB_URI: ${ssm:/service/${sls:stage}/MONGODB_URI~true}
+    LOG_LEVEL: info
+```
+
+Use CircleCI contexts per environment to provide AWS credentials and SSM/Secrets Manager access.
+
+### Secret rotation
+
+- Rotate database credentials quarterly.
+- Update SSM/Secrets Manager values and redeploy; no code change needed.
+- Document changes in this page so the team knows which environments were updated.

@@ -1,0 +1,112 @@
+---
+title: DTOs & Validation
+icon: FileText
+description: Create data transfer objects and enable validation pipes.
+---
+
+## Why this matters
+
+DTOs (Data Transfer Objects) describe what data is allowed in an API request. We’ll use **Zod**, a TypeScript-first schema library, together with `nestjs-zod` so that validation happens automatically.
+
+> **What is Zod?** Zod lets you declare data shapes using JavaScript/TypeScript. It produces readable error messages and can be reused for both runtime validation and type inference. See the [official docs](https://zod.dev/) for deeper study.
+
+### How this fits into the app
+
+- **Requests → DTOs → Service:** When an HTTP request hits a controller, Nest converts the JSON body into a DTO instance. If the DTO passes validation, the data is safe to pass to your service.
+- **Zod schemas drive validation:** By declaring the shape of `CreateTask` and `UpdateTask`, we can guarantee required fields (like `title`) are present and properly formatted before touching the database.
+- **Shared types:** Because Zod schemas are written in TypeScript, they also describe the TypeScript types you can reuse across services or even a front-end later.
+
+<Callout title="Beginner tip">
+Focus on the idea that DTOs are the **gatekeepers** of your API. They define what “good input” looks like. Zod just gives us a nice, readable way to write those rules.
+</Callout>
+
+### 1. Create DTO files
+
+Make a new folder `src/tasks/dto/` and add two files.
+
+```bash tab="macOS/Linux"
+mkdir -p src/tasks/dto
+```
+
+```powershell tab="Windows PowerShell"
+New-Item -ItemType Directory -Path src/tasks/dto -Force
+```
+
+```ts title="src/tasks/dto/create-task.dto.ts"
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+
+export const CreateTaskSchema = z.object({
+  title: z
+    .string()
+    .min(1, 'Title is required')
+    .max(80, 'Keep the title under 80 characters'),
+  description: z
+    .string()
+    .max(200, 'Description should be short')
+    .optional(),
+});
+
+export class CreateTaskDto extends createZodDto(CreateTaskSchema) {}
+```
+
+```ts title="src/tasks/dto/update-task.dto.ts"
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+import { CreateTaskSchema } from './create-task.dto';
+
+export const UpdateTaskSchema = CreateTaskSchema.extend({
+  done: z.boolean().optional(),
+}).partial();
+
+export class UpdateTaskDto extends createZodDto(UpdateTaskSchema) {}
+```
+
+- `createZodDto` turns a Zod schema into a Nest-compatible DTO class.
+- `partial()` makes every field optional for updates.
+
+### 2. Enable validation globally
+
+Update `src/main.ts` to use the `ZodValidationPipe` provided by `nestjs-zod`.
+
+```ts title="src/main.ts"
+import { NestFactory } from '@nestjs/core';
+import { ZodValidationPipe } from 'nestjs-zod'; // [!code ++]
+import { AppModule } from './app.module';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ZodValidationPipe()); // [!code ++]
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+```
+
+Now every incoming request is checked against the Zod schemas before reaching your controllers.
+
+### 3. Try it out (optional)
+
+Start the server (`npm run start:dev`) and send a POST request without a title. You should receive a `400 Bad Request` with a descriptive Zod validation error.
+
+### Commit DTO and validation updates
+
+Capture the DTO files and validation wiring before moving on:
+
+```bash
+git add src/tasks/dto/ src/main.ts
+git commit -m "feat: add task dtos and validation"
+```
+
+### Push your branch and open a pull request
+
+Stay on your `feature/data-modeling` branch and push it to GitHub:
+
+```bash
+git push -u origin feature/data-modeling
+```
+
+Then open a pull request targeting `main`. Add a short summary (what changed, any screenshots of DTO usage) and request a teammate review. When reviewers approve, choose **Squash and merge** so the entire branch becomes a single commit on `main` (for example, `feat: add task data modeling`).
+
+Once merged, pull the latest `main` locally before starting the next chapter.
+
+Next, move to **Implement CRUD Service** to add database operations.

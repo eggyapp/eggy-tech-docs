@@ -1,0 +1,50 @@
+---
+title: 1. Foundations
+icon: BookOpen
+description: Core concepts you need before writing code.
+---
+
+## Why foundations matter
+
+Before touching any code it helps to understand the tools NestJS relies on. This page explains the high-level concepts; the step-by-step pages that follow will put them into practice.
+
+## npm in a nutshell
+
+- **npm** stands for *Node Package Manager*. It ships with Node.js and lets you install third-party libraries.
+- The command `npm install <package>` downloads the package into the local `node_modules/` folder and records it in `package.json`.
+- Use `npx` to run CLI tools temporarily without installing them globally (e.g., `npx @nestjs/cli new task-api`).
+
+> **Tip**: You can view every available npm script by running `npm run` with no arguments.
+
+## What is `package.json`?
+
+Every Node project includes a `package.json` file that describes the app:
+
+```json
+{
+  "name": "task-api",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "nest start",
+    "start:dev": "nest start --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.0.0"
+  }
+}
+```
+
+- `scripts` define shortcuts like `npm run start:dev`.
+- `dependencies` list packages needed at runtime.
+- `devDependencies` list packages used only during development (testing, build tooling, etc.).
+
+## Dependency types
+
+- Use `npm install <package>` for runtime dependencies.
+- Use `npm install -D <package>` (or `--save-dev`) for development-only tools such as linters or testing libraries.
+- Removing a package requires two steps: `npm uninstall <package>` and deleting any custom code that referenced it.
+
+With these concepts in mind, continue to **Prerequisites** to set up your machine, then follow **Project Setup** and **Project Tour** to see how these ideas appear in a real NestJS project.

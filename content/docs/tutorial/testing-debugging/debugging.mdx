@@ -1,0 +1,59 @@
+---
+title: Debugging Basics
+icon: FileText
+description: Diagnose common issues and read error messages with confidence.
+---
+
+## Why debugging matters
+
+Every developer hits errors. Learning to read stack traces and check logs will save you hours. This page covers simple techniques you can use whenever something goes wrong in the tutorial.
+
+## 1. Read the terminal output
+
+When Nest encounters an error it prints a stack trace. Focus on:
+
+1. **Error message** – e.g., `MongoServerError: bad auth Authentication failed`.
+2. **File & line numbers** – tells you where the problem originated.
+3. **Cause** – usually shown in the last few lines of the stack trace.
+
+If the terminal shows `Cannot find module ...`, make sure the file path matches the `import` statement.
+
+## 2. Common issues and fixes
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `ECONNREFUSED 127.0.0.1:27017` | MongoDB not running locally | Start Docker container or switch to Atlas |
+| `MongoServerError: bad auth` | Wrong username/password for Atlas | Double-check `.env` values and whitespace |
+| `Nest can't resolve dependencies` | Missing provider in `TasksModule` | Ensure `providers: [TasksService]` and exports when needed |
+| `Validation failed: title must be text` | DTO rejected invalid data | Update the request body to match the DTO |
+
+Keep this table nearby as you work through the steps.
+
+## 3. Use logs wisely
+
+Add `console.log` statements inside service methods to print variables when debugging. Remove them once the issue is fixed to keep logs clean.
+
+For more structured logging, revisit [Logging & Observability](/docs/backend/logging-observability) for JSON logger examples.
+
+## 4. Inspect MongoDB state
+
+- `mongosh "mongodb://localhost:27017/tasks" --eval 'db.tasks.find().pretty()'`
+- MongoDB Compass GUI: visually browse collections and documents.
+
+If documents aren’t appearing, confirm that service methods call `create`/`update` and that the controller passes the DTO.
+
+## 5. Add defensive checks
+
+- Wrap Atlas connections in `try/catch` blocks to log helpful errors.
+- Use `console.error(err)` when catching exceptions during development.
+- Return early with friendly messages (`throw new NotFoundException(...)`) as shown in the service code.
+
+## 6. Ask for help
+
+Links for deeper learning:
+
+- [NestJS Troubleshooting](https://docs.nestjs.com/faq/common-errors)
+- [MongoDB Connection Errors](https://www.mongodb.com/docs/manual/reference/connection-string-errors/)
+- [JavaScript Debugging Basics (MDN)](https://developer.mozilla.org/en-US/docs/Learn/Common_questions/What_are_browser_developer_tools)
+
+When you feel confident diagnosing issues, move back to the main flow or explore the optional enhancements in **Next Steps**.

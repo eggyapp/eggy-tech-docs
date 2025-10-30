@@ -1,0 +1,160 @@
+---
+title: Prepare MongoDB
+icon: FileText
+description: Choose Docker or Atlas and create your environment files.
+---
+
+## Goal for this step
+
+Decide where MongoDB will run, get it online, and capture the connection details in `.env` files so NestJS can read them.
+
+## Option A — Docker container (local database)
+
+1. **Install Docker Desktop** if you have not already.
+2. **Create a Compose file** at the project root:
+
+```bash tab="macOS/Linux"
+cat <<'YAML' > docker-compose.dev.yml
+version: "3.9"
+services:
+  mongodb:
+    image: mongo:7
+    container_name:
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: tasks
+volumes:
+  mongo-data:
+YAML
+```
+
+```powershell tab="Windows PowerShell"
+@"
+version: "3.9"
+services:
+  mongodb:
+    image: mongo:7
+    container_name: task-api-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: tasks
+volumes:
+  mongo-data:
+"@ | Set-Content -Path docker-compose.dev.yml
+```
+
+3. **Start MongoDB**:
+
+```bash tab="macOS/Linux"
+docker compose -f docker-compose.dev.yml up -d
+```
+
+```powershell tab="Windows PowerShell"
+docker compose -f docker-compose.dev.yml up -d
+```
+
+4. **Verify** the container is running with `docker ps` or by connecting using `mongosh "mongodb://localhost:27017" --eval 'db.runCommand({ ping: 1 })'`.
+
+<Callout title="When to choose Docker">
+- Works offline once the image is pulled.
+- Mimics professional local development setups.
+- Easy to reset if you break the data—just stop and start the container.
+</Callout>
+
+<Callout title="Watch out" type="warn">
+- Docker Desktop needs plenty of disk space and at least 4 GB RAM to stay responsive.
+- Container terminology (ports, volumes) introduces new vocabulary; you can ignore it for now.
+</Callout>
+
+<Callout title="Learn Docker" type="info">
+- Docker shows up in almost every modern backend workflow: local development, CI pipelines, and deployment all rely on containers.
+- Even light familiarity (building images, running `docker compose`) can get you a long way.
+- Set aside time later to explore the official [Docker getting started guide](https://docs.docker.com/get-started/) so you understand what the commands here are doing under the hood.
+- A quick Docker 101 that is worth watching is [here](https://www.youtube.com/watch?v=rIrNIzy6U_g).
+</Callout>
+
+## Option B — MongoDB Atlas (cloud database)
+
+1. Create a free account at [mongodb.com/cloud/atlas](https://www.mongodb.com/cloud/atlas/register).
+2. Create a new **Project**, then an **M0 (Free Tier)** cluster.
+3. Add a database user (username + password) with `Atlas admin` or `Read and write to any database` privileges.
+4. Add your current IP address to the network access list so Atlas accepts connections from your laptop.
+5. Copy the **Connection String** for the driver `MongoDB for VS Code or other` and keep it handy—you will paste it into the `.env` file in a moment.
+
+<Callout title="Why pick Atlas?">
+- No heavy local installs—great for low-spec or school laptops.
+- Browser UI lets you browse collections to understand the data visually.
+- Mirrors how production cloud databases handle authentication and IP allow lists.
+</Callout>
+
+<Callout title="Atlas gotchas" type="warn">
+- Requires reliable internet; slow Wi-Fi makes requests feel sluggish.
+- In most cases, mobile tethering won't connect to Atlas.
+- Initial setup spans several screens (project, cluster, user, network access).
+- Connection strings are long—copy/paste carefully to avoid typo-driven auth errors.
+</Callout>
+
+## Capture configuration in `.env` files
+
+1. **Create a template**:
+
+```bash tab="macOS/Linux"
+cat <<'ENV' > .env.example
+# Shared defaults (keep secrets out of this file)
+MONGODB_URI=mongodb://localhost:27017/tasks
+MONGODB_URI_ATLAS=
+USE_ATLAS=false
+ENV
+```
+
+```powershell tab="Windows PowerShell"
+@'
+# Shared defaults (keep secrets out of this file)
+MONGODB_URI=mongodb://localhost:27017/tasks
+MONGODB_URI_ATLAS=
+USE_ATLAS=false
+'@ | Set-Content -Path .env.example
+```
+
+2. **Create your personal local file** (auto-ignored by git) and fill it out:
+
+```bash tab="macOS/Linux"
+cp .env.example .env.development.local
+```
+
+```powershell tab="Windows PowerShell"
+Copy-Item .env.example -Destination .env.development.local
+```
+
+- If you are using Docker, the default `MONGODB_URI` already points to the container.
+- If you are using Atlas, set `USE_ATLAS=true` and paste the connection string into `MONGODB_URI_ATLAS`.
+
+<Callout title="Keep secrets safe" type="error">
+Never commit `.env.development.local`. Confirm your `.gitignore` pattern includes `.env*` (the starter repo already does).
+</Callout>
+
+## Ready for the next step
+
+At this point you have:
+
+- A MongoDB instance running locally **or** an Atlas cluster accessible from your laptop.
+- Environment variables capturing the right connection details.
+
+Continue to **Connect MongoDB** to install the NestJS database dependencies and wire the connection into `AppModule`.
+
+### Checkpoint: capture your changes in Git
+
+Run `git status` and stage the files you created (for example, `.env.example` and `docker-compose.dev.yml`). Remember that personal files like `.env.development.local` should stay untracked.
+
+```bash
+git add .env.example docker-compose.dev.yml
+git commit -m "feat: document local and atlas mongodb setup"
+```
+
+If you added Atlas notes or other docs, include them in the commit. You will push this commit to your feature branch once the whole chapter is complete.

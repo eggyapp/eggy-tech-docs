@@ -1,0 +1,44 @@
+---
+title: 4. CRUD Implementation
+icon: CodeXml
+description: Build the Task service and expose REST endpoints.
+---
+
+## What you'll learn
+
+- The REST concepts that guide the endpoints in this chapter
+- How to move from data logic to HTTP endpoints step by step
+- Where each part of the CRUD flow (service, controller, routes) will be built
+
+<Callout title="What does CRUD mean?">
+CRUD stands for **Create**, **Read**, **Update**, and **Delete**. These four actions cover the core lifecycle of most resources:
+
+- **Create** – add a new record (e.g., `POST /tasks`).
+- **Read** – fetch existing data (e.g., `GET /tasks`).
+- **Update** – modify part of a record (e.g., `PATCH /tasks/:id`).
+- **Delete** – remove a record (e.g., `DELETE /tasks/:id`).
+
+Every endpoint you’ll build in this chapter maps to one of these operations.
+</Callout>
+
+This chapter is split into focused pages:
+
+1. **REST Basics** – plain-language primer on resources, HTTP verbs, and routes.
+2. **Controller + Service Pattern** – understand how Nest splits responsibilities before coding.
+3. **Service** – implement the database-facing logic with NestJS + MongoDB.
+4. **Controller & Routes** – expose that logic over HTTP.
+
+Work through the pages in order. By the time you reach the controller page, the REST vocabulary and service code will already be familiar.
+
+
+## Version control: branch for Chapter 4
+
+Start this chapter from a clean `main`, then create a new branch so the CRUD work is isolated for review:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b feature/crud-implementation
+```
+
+Commit each slice of work (service, controller, tests) as you complete it.

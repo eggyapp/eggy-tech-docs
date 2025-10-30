@@ -1,0 +1,56 @@
+---
+title: Controller + Service Pattern
+icon: Share2
+description: See how NestJS separates HTTP handling from business logic.
+---
+
+## Why this pattern exists
+
+NestJS applies the classic controller/service split so your code is easier to test, reason about, and grow. Controllers focus on **how** data enters or leaves the app (HTTP, WebSockets, etc.), while services focus on **what** the app needs to do (business logic, database access).
+
+## Responsibility chart
+
+| Concern | Controller | Service |
+|---------|------------|---------|
+| Accepting HTTP requests | ✅ | ❌ |
+| Parsing path/query/body data | ✅ | ❌ |
+| Calling the database or external APIs | ❌ | ✅ |
+| Handling business rules | ❌ | ✅ |
+| Throwing HTTP-friendly errors | ✅ *(wrap service errors)* | ✅ *(raise domain errors)* |
+
+Keeping these roles separate means you can change one without breaking the other—swap out MongoDB, add caching, or expose the same service to a different transport (e.g., a CLI) with minimal code changes.
+
+## How dependency injection ties it together
+
+- You mark a class with `@Injectable()` to let Nest manage its lifecycle.
+- Controllers receive services via constructor injection, e.g., `constructor(private tasksService: TasksService) {}`.
+- Nest’s module system wires everything: the module provides the service, lists the controller, and the framework handles instantiation order.
+
+```
+Request ─► Controller ─► Service ─► MongoDB
+            ▲             │
+            └──── errors ─┘
+```
+
+## Testing benefits
+
+- **Service unit tests** only focus on business logic. You can mock the Mongo model and verify methods like `create` or `findOne` directly.
+- **Controller tests** can mock the service to ensure the right status codes and DTO handling without touching the database.
+
+## When to add more layers
+
+As projects grow you might introduce:
+
+- **Repository layer** to isolate database queries even further.
+- **Use-case / application services** that orchestrate multiple domain services.
+- **Presenters** or **interceptors** to shape responses.
+
+For this tutorial, controller + service is enough—just keep their responsibilities clean.
+
+## Next steps
+
+With the pattern in mind:
+
+1. Review **REST Basics** if you need a refresher on routes and verbs.
+2. Build the actual logic in **Service**.
+3. Connect HTTP requests to that logic in **Controller & Routes**.

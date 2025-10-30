@@ -1,0 +1,17 @@
+{
+  "title": "Backend Tutorial",
+  "description": "A simple NestJS + MongoDB CRUD API",
+  "icon": "Rocket",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index",
+    "---Chapters---",
+    "foundations",
+    "environment",
+    "data-modeling",
+    "crud",
+    "testing-debugging",
+    "next-steps"
+  ]
+}

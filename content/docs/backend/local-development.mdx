@@ -1,0 +1,82 @@
+---
+title: Local Development
+icon: FileText
+description: Running the backend and database locally.
+---
+
+## Overview
+
+You can run the backend entirely on your machine using either a local MongoDB container or MongoDB Atlas. This page walks through both options and how to swap between them using environment variables defined in [Configuration & Environment](/docs/backend/config-env).
+
+## Quick start (Docker)
+
+1. Install Docker Desktop.
+2. Create `docker-compose.dev.yml`:
+
+   ```yaml
+   version: "3.9"
+   services:
+     mongo:
+       image: mongodb/mongodb-community-server:7.0
+       ports:
+         - "27017:27017"
+       environment:
+         MONGO_INITDB_DATABASE: tasks
+       volumes:
+         - mongo-data:/data/db
+   volumes:
+     mongo-data: {}
+   ```
+
+3. Start MongoDB: `docker compose -f docker-compose.dev.yml up -d`
+4. Copy `.env.development.example` to `.env.development.local` and set `MONGODB_URI=mongodb://localhost:27017/tasks`.
+5. Run the Nest app: `pnpm dev` (uses `next dev` with docs; for the backend tutorial, run `pnpm nest:start` inside the sample project).
+
+The backend reuses the same connection string when deployed if you point it to Atlas using stage-specific variables.
+
+## MongoDB Atlas option
+
+If you prefer not to run Docker:
+
+1. Create a free Atlas cluster and database user.
+2. Whitelist your IP or enable access from everywhere for development.
+3. Copy the connection string and set it in `.env.development.local` as `MONGODB_URI_ATLAS`.
+4. Toggle the URI in your Nest configuration (see snippet below) to use Atlas instead of localhost.
+
+```ts
+const uri = process.env.USE_ATLAS === "true"
+  ? process.env.MONGODB_URI_ATLAS
+  : process.env.MONGODB_URI;
+
+MongooseModule.forRoot(uri, {
+  autoIndex: true,
+  serverSelectionTimeoutMS: 5000,
+});
+```
+
+Set `USE_ATLAS=true` in environments that should connect to Atlas. Keep local Docker as the default for onboarding consistency.
+
+## Seeding data
+
+- Use Nest command-line scripts or dedicated seeder modules to insert example documents (`tasks.seed.ts`).
+- Alternatively, run `mongosh`:
+
+  ```bash
+  mongosh "mongodb://localhost:27017/tasks" --eval 'db.tasks.insertOne({ title: "First task", done: false })'
+  ```
+
+## Running tests locally
+
+- Unit tests: `pnpm test` (configure in the tutorial project).
+- Integration tests can spin up an in-memory Mongo server using `mongodb-memory-server` for deterministic runs.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `ECONNREFUSED` when connecting | Ensure Docker container is running and port 27017 open. |
+| `MongoServerError: user is not allowed` | Check credentials; Atlas requires user with read/write role. |
+| Slow cold start locally | Increase Lambda emulation memory or use `pnpm start:dev` which keeps Nest hot-reloaded. |
+| Duplicate indexes after switching URIs | Run `npm run schema:sync` (if defined) or drop indexes via `db.tasks.dropIndexes()` in dev. |
+
+See also [Tutorial → Setup](/docs/backend/tutorial/setup) for step-by-step commands a junior engineer follows when onboarding.

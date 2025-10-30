@@ -1,0 +1,17 @@
+{
+  "title": "Backend",
+  "description": "Backend documentation",
+  "icon": "Rocket",
+  "root": true,
+  "pages": [
+    "---Introduction---",
+    "index",
+    "---Core Concepts---",
+    "architecture",
+    "data-modeling",
+    "config-env",
+    "local-development",
+    "api-standards",
+    "logging-observability"
+  ]
+}

@@ -1,0 +1,51 @@
+---
+title: REST Basics
+icon: Globe
+description: Understand how REST APIs map HTTP verbs and URLs to actions.
+---
+
+## Why learn this first?
+
+Before we wire up controllers and services it helps to understand the vocabulary used in REST APIs. Knowing what a **resource**, **route**, or **HTTP verb** means makes the controller code much less mysterious.
+
+## Key REST ideas
+
+- **Resource**: A noun that represents something in your system (for example, `Task`).
+- **Endpoint / Route**: The URL you expose for that resource, often combined with an HTTP verb (`GET /tasks`).
+- **Representation**: The JSON payload you send back (or receive) that describes a resource.
+- **Statelessness**: Each request contains all info the server needs—no hidden session state.
+
+## Common HTTP verbs
+
+| Verb | Typical meaning | Example in this project |
+|------|-----------------|-------------------------|
+| `GET` | Read data | `GET /tasks` lists tasks |
+| `POST` | Create a new record | `POST /tasks` adds a task |
+| `PATCH` | Update part of a record | `PATCH /tasks/:id` toggles `done` |
+| `DELETE` | Remove a record | `DELETE /tasks/:id` deletes a task |
+
+<Callout title="Beginner tip">
+When you see decorators like `@Get()` or `@Post()` in Nest, think of them as aliases for the HTTP verbs above.
+</Callout>
+
+## Route patterns
+
+- Plural nouns keep things consistent: `tasks`, `users`, `projects`.
+- Use `:id` in the path to capture a specific record (`/tasks/:id`).
+- Query parameters (e.g., `/tasks?done=true`) are great for filters and pagination.
+
+## Request and response flow
+
+1. **Client sends a request** using an HTTP verb, URL, optional body, and headers.
+2. **Controller decorator** catches the request (e.g., `@Get('tasks/:id')`).
+3. **Controller method** validates/unwraps parameters and calls the service.
+4. **Service** performs the database work and returns plain data.
+5. **Controller** sends a JSON response (Nest handles serialization for you).
+
+## Error handling conventions
+
+- Return `400 Bad Request` when the data is invalid (handled by Zod validation).
+- Throw `404 Not Found` when the requested `id` does not exist.
+- Use `500 Internal Server Error` for unexpected failures (Nest does this automatically if an uncaught error bubbles up).
+
+With these concepts in mind, you’re ready to build the actual service and controller. Continue to **Implement CRUD Service** to write the data layer, then wire it up in **Controllers & Routes**.

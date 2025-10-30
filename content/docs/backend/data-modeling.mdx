@@ -1,0 +1,91 @@
+---
+title: Data Modeling
+icon: FileText
+description: MongoDB schemas with @nestjs/mongoose.
+---
+
+## Overview
+
+We use MongoDB for persistence with `@nestjs/mongoose`. The combination gives us schema flexibility alongside type-safe DTOs. Our tutorial resource (`Task`) demonstrates the recommended patterns below, but apply the same principles to production collections.
+
+### Schemas
+
+- Use `@Schema()` + `@Prop()` decorators to define models.
+- Enable timestamps to track created/updated dates (`{ timestamps: true }`).
+- Prefer explicit field types (e.g., `@Prop({ type: String, required: true, trim: true })`).
+- Add defaults for booleans and enums to keep writes predictable.
+
+```ts
+@Schema({ timestamps: true })
+export class Task {
+  @Prop({ type: String, required: true, trim: true })
+  title!: string;
+
+  @Prop({ type: String, required: false, trim: true })
+  description?: string;
+
+  @Prop({ type: Boolean, default: false, index: true })
+  done!: boolean;
+}
+
+export type TaskDocument = Task & Document;
+export const TaskSchema = SchemaFactory.createForClass(Task);
+```
+
+### Indexing strategy
+
+- Add indexes for frequent query filters (`done`, `createdAt` ranges).
+- Use compound indexes for combinations (`ownerId + status`).
+- For text search, use MongoDB Atlas search or define text indexes with caution; they impact write performance.
+- Periodically run `db.tasks.getIndexes()` in non-prod to audit index drift.
+
+```ts
+TaskSchema.index({ done: 1, updatedAt: -1 });
+TaskSchema.index({ title: 1 }, { unique: false, collation: { locale: "en", strength: 2 } });
+```
+
+### DTOs and validation
+
+- Map DTOs with `class-validator` + `class-transformer` to enforce input shape.
+- Keep DTOs separate from persistence models (e.g., `CreateTaskDto`, `UpdateTaskDto`).
+- Use `@IsString()`, `@IsOptional()`, `@IsBoolean()` etc. to guarantee data quality.
+- Apply `ValidationPipe` globally with `{ whitelist: true, transform: true }` in `main.ts`.
+
+```ts
+export class CreateTaskDto {
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class UpdateTaskDto {
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  done?: boolean;
+}
+```
+
+### Relationships & references
+
+- Prefer storing foreign keys as ObjectIds (`Types.ObjectId`).
+- Populate references lazily to avoid large payloads; use `.populate()` only where needed.
+- For denormalized views, create dedicated read models or use MongoDB aggregation pipelines.
+
+### Environment awareness
+
+- Development uses local Docker or Atlas (see [Local Development](/docs/backend/local-development)).
+- Production uses managed clusters; keep connection strings in secrets (see [Configuration & Environment](/docs/backend/config-env)).
+- Always include read/write user roles scoped per environment.
+
+### Migrations
+
+- MongoDB migrations can be handled via scripts or tools like [migrate-mongo](https://github.com/seppevs/migrate-mongo).
+- Document schema changes in PR descriptions and update relevant tutorial content when field requirements change.

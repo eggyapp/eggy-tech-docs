@@ -1,0 +1,77 @@
+---
+title: Logging & Observability
+icon: FileText
+description: Basic logs and tracing entry points.
+---
+
+## Overview
+
+Logging and observability help us diagnose issues in a distributed system. Keep the stack lightweight to match the single-Lambda architecture, and expand as needs grow.
+
+### Logging
+
+- Use Nest's built-in logger with JSON output for consistency.
+- Wrap the logger to inject a `traceId` per request. Middleware can set this using `cls-hooked` or the new AsyncLocalStorage API.
+- Avoid logging secrets; redact tokens before output.
+
+```ts
+import { LoggerService, LogLevel } from "@nestjs/common";
+
+export class JsonLogger implements LoggerService {
+  constructor(private levels: LogLevel[] = ["log", "error", "warn", "debug", "verbose"]) {}
+
+  log(message: string, context?: string) {
+    this.write("log", message, context);
+  }
+
+  error(message: string, trace?: string, context?: string) {
+    this.write("error", message, context, trace);
+  }
+
+  // ...warn/debug/verbose similar
+
+  private write(level: LogLevel, message: string, context?: string, trace?: string) {
+    if (!this.levels.includes(level)) return;
+    const traceId = AsyncLocalStorage.getStore()?.traceId;
+    console[level === "error" ? "error" : "log"](
+      JSON.stringify({ timestamp: new Date().toISOString(), level, message, context, traceId, trace })
+    );
+  }
+}
+```
+
+Register the logger in `main.ts` and apply middleware to set `traceId`.
+
+### Metrics & tracing
+
+- AWS Lambda automatically emits duration, memory usage, and cold-start metrics to CloudWatch.
+- Use CloudWatch embedded metrics or the `@aws-lambda-powertools` library to emit custom business metrics (e.g., `tasks.created`).
+- For distributed tracing, integrate AWS X-Ray or OpenTelemetry later. Ensure the `traceId` field lines up with whichever tracer you pick.
+
+### Dashboards
+
+- Create CloudWatch dashboard widgets for:
+  - Lambda invocations / errors / throttle counts
+  - Average duration and cold start counts
+  - MongoDB Atlas metrics (connections, operation latency)
+- CircleCI insights track pipeline health—link to the dashboard from [CI/CD → CircleCI Pipeline](/docs/ci-cd/circleci-pipeline).
+
+### Alerts
+
+- Start with CloudWatch Alarms:
+  - Error rate > 5% over 5 minutes
+  - Duration exceeding 80% of timeout
+  - Throttles detected
+- Send notifications to Slack or email via SNS.
+- For MongoDB, configure Atlas alerts for memory, disk space, and slow queries.
+
+### Local development visibility
+
+- Use `pnpm dev` to stream logs to the terminal.
+- Enable verbose logging via `LOG_LEVEL=debug`.
+- When using Docker, inspect MongoDB logs with `docker compose logs mongo`.
+
+### Next steps
+
+- As the system grows, consider structured log shipping (e.g., DataDog, Logtail) and full tracing with OpenTelemetry.
+- Update this page when new observability tools are introduced so newcomers know where to look.
