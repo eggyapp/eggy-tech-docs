@@ -1,0 +1,180 @@
+---
+title: Unit Testing
+icon: FileText
+description: Run and debug tests in using Jest
+---
+
+While most of our testing workflow is automated (CI/CD), understanding **how to manually test** your code locally helps you:
+
+- Validate changes before pushing.
+- Debug failing tests.
+- Run only the tests relevant to your feature.
+
+## 1. 🧠 What Is Jest?
+
+[Jest](https://jestjs.io/) is a JavaScript testing framework built for simplicity.
+
+It works perfectly with NestJS and supports:
+
+- Unit tests (testing a single service, controller or other component)
+- Integration tests (testing multiple components together)
+- Mocks (fake services, data, etc.)
+
+## 2. 🧪 Using Jest with NestJS
+
+Before trying to run tests, make sure you have installed the dependencies:
+
+1. Check your `package.json` for the `@nestjs/testing` package.
+2. If the package is not installed, run `npm install --save-dev @nestjs/testing`. (`--save-dev` adds the dependency to `devDependencies` only.)
+3. Check your `package.json` -> `scripts` for the `test` script.
+4. If the script is not defined, add it:
+
+   ```json
+   "scripts": {
+     "test": "jest",
+   }
+   ```
+
+5. You good to go! Run `npm run test` to execute the tests (the project already contains simple tests inside the `tests` folder).
+6. You should see something like this:
+
+```
+ PASS  src/app.controller.spec.ts
+  AppController
+    root
+      ✓ should return "Hello World!" (5 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+```
+
+<Callout title="Beginner tip">
+  We recommend to explore the following section in the NestJS docs before going
+  further - [Testing](https://docs.nestjs.com/fundamentals/testing)
+</Callout>
+
+## 3. 🔬 Testing the Tasks module
+
+Now its time to write some tests!
+
+Create a new folder inside the `tests` called `tasks`.
+
+<Callout title="Beginner tip">
+  There are many different ways how you can structure your tests.
+
+The main ones are:
+
+- Placing all tests inside the `tests` folder, grouped by the module.
+- Creating a test right near the file you want to test.
+
+In this tutorial, we will use the first approach to keep tests separated from the source code.
+
+</Callout>
+
+### 3.1. Controller tests
+
+Let's start with the controller tests. Create a new file called `tasks.controller.spec.ts` inside the `tests/tasks` folder.
+
+In this file we should think about possible use cases and edge-cases where the controller might fail.
+
+For example, we have the `findAll` method that returns all tasks. We should test the following cases:
+
+- The database is empty.
+- The database contains one task.
+- The database contains multiple tasks.
+
+<Callout title="Beginner tip">
+  The `describe` function is a test runner function that allows you to group
+  tests together.
+</Callout>
+
+We will not go deep into the tests here, as it is just a high-level overview, but this gives you an idea of how to write tests.
+
+### 3.2 Service tests
+
+Now let's move on to the service tests. Create a new file called `tasks.service.spec.ts` inside the `tests/tasks` folder.
+
+This one has something special:
+
+```ts
+constructor(
+    @InjectModel(Task.name)
+    private readonly taskModel: Model<TaskDocument>,
+  ) {}
+```
+
+The `InjectModel` decorator is a NestJS decorator that allows you to inject a Mongoose model into a service by its name.
+
+We have 2 options here:
+
+1. Create "in-memory" database and use it for testing (the same MongoDB database but created on a fly just for testing).
+2. "Mock" the database/model using Jest or any other mocking library.
+
+For this tutorial, we will use the second option as it is easier to set up.
+
+By creating and injecting our own mock object
+
+```ts
+const mockModel = {
+  find: jest.fn(),
+};
+```
+
+we can still use the service as before, but instead of using the real database, it will use the mockModel object.
+This way, we can check if the methods are called correctly and with the correct arguments.
+
+```ts
+describe('TasksService', () => {
+  let service: TasksService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        TasksService,
+        {
+          provide: getModelToken(Task.name), // <- this matches @InjectModel(Task.name)
+          useValue: mockTaskModel,          // <- your Jest mock
+        },
+      ],
+    }).compile();
+
+```
+
+### 3.3 DTO tests
+
+Finally, let's write some tests for the DTO. Create 1 test file for each dto object inside the `test/tasks/dto` folder.
+
+We should verify that the DTO is correctly constructed and that it has the correct properties.
+
+Example:
+
+```ts
+// create-task.dto.test.ts
+
+export const CreateTaskSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Title is required")
+    .max(80, "Keep the title under 80 characters"),
+  description: z.string().max(200, "Description should be short").optional(),
+});
+
+// given the schema above we can write a test like this:
+
+describe("CreateTaskDto", () => {
+  it("should throw an error if the title length is above 80 characters", () => {
+    const data = {
+      title: "a".repeat(81),
+      description: "test description",
+    };
+
+    const result = CreateTaskSchema.safeParse(data);
+
+    expect(result.success).toBeFalsy();
+
+    // other expects to be more specific (what error was thrown, etc.)
+  });
+});
+```
+
+In the next section we will cover how to write integration tests.
