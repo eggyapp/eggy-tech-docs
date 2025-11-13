@@ -1,0 +1,239 @@
+---
+title: Integration Testing
+icon: FileText
+description: Run and debug integration tests in using Supertest
+---
+
+## 📝 Overview
+
+Integration (end-to-end) tests verify that different parts of your NestJS application work together correctly - from the controller down to the database layer.
+In this guide, we'll set up integration testing for a `Tasks` module using **[Supertest](https://github.com/forwardemail/supertest)**.
+
+**Supertest** is an HTTP assertions library that allows us to make real HTTP requests to our Nest app without running it on a network port.
+
+This means we can test routes, validation, and middleware just as real clients would interact with them.
+
+## ⚙️ Setup
+
+Make sure you have **Jest** and **Supertest** installed:
+
+```bash
+npm install supertest --save-dev
+```
+
+<Callout type="info" emoji="ℹ️">
+  Note the `--save-dev` flag. This will install the package in your
+  `devDependencies` only. The `devDependencies` are excluded from the production
+  build.
+</Callout>
+
+## 🧪 Testing the Tasks module
+
+Now its time to write some tests!
+
+1. Remove the existing `app.e2e-spec.ts` file as we will start from scratch.
+
+2. Create a new folder inside the `test` called `e2e`(end-to-end). Inside this folder, create a new file called `tasks.e2e.test.ts`.
+
+<Callout type="info" emoji="ℹ️">
+  The structure is optional and can vary depending on your preferences.
+</Callout>
+
+3. Inside the `tasks.e2e.test.ts` file, add the following starting code:
+
+```ts
+describe("Tasks", () => {
+  beforeAll(async () => {});
+  afterAll(async () => {});
+});
+```
+
+<Callout type="info" emoji="ℹ️">
+  The `beforeAll` and `afterAll` hooks are run before and after all tests in the
+  file.
+</Callout>
+
+4. Add some initialization code to both the `beforeAll` and `afterAll` hooks:
+
+```ts
+describe("Tasks", () => {
+  let app: INestApplication; // our main NestJS application
+
+  beforeAll(async () => {
+    // This should be familiar from the manual testing tutorial
+    // This is our module under the test
+    const moduleRef = await Test.createTestingModule({
+      imports: [TasksModule],
+    }).compile();
+
+    app = moduleRef.createNestApplication(); // create the NestJS application
+    await app.init(); // initialize the application
+  });
+
+  afterAll(async () => {
+    await app.close(); // do not forget to close the application
+  });
+});
+```
+
+<Callout type="info" emoji="ℹ️">
+  Our tests are called end-to-end, but it does not mean we can test only the
+  entire application. We can make our e2e tests granular by testing each module
+  separately.
+</Callout>
+
+5. Now we are ready to add the first test. This will be a simple test that verifies that the `/tasks` route returns a 200 status code.
+
+```ts
+it("/GET tasks should return an array of tasks", async () => {
+  return request(app.getHttpServer()).get("/tasks").expect(200).expect([]);
+});
+```
+
+6. Check your `package.json` file for the `test:e2e` script.
+
+```json
+"scripts": {
+  ...
+  "test:e2e": "jest --config ./test/jest-e2e.json"
+}
+```
+
+Run the `npm run test:e2e` command to execute the tests.
+
+<Callout type="error" emoji="⚠️">
+ Ooops! We have an error in our test.
+
+You should see something like:
+
+`FAIL test/e2e/tasks.e2e-spec.ts`
+
+`Nest can't resolve dependencies of the TaskModel (?). Please make sure that the argument "DatabaseConnection" at index [0] is available in the MongooseModule context.`
+
+</Callout>
+
+If you take a closer look at our `TasksModule` you will notice the `MongooseModule` is imported.
+
+```
+...
+imports: [MongooseModule.forFeature([{ name: Task.name, schema: TaskSchema }])],
+...
+```
+
+As you know everywhere we have a `magic` so internally this `MongooseModule.forFeature` looks something like:
+
+```ts
+{
+  provide: getModelToken(Task.name),
+  useFactory: (connection: Connection) => connection.model(Task.name, TaskSchema),
+  inject: [getConnectionToken()],
+}
+```
+
+And when our `TasksService` introduce the following:
+
+```ts
+export class TasksService {
+  constructor(
+    @InjectModel(Task.name)
+    private readonly taskModel: Model<TaskDocument>
+  ) {}
+}
+```
+
+<Callout type="info" emoji="ℹ️">
+  `@InjectModel(Task.name)` is a decorator that tells Nest: "Inject the provider
+  whose token is `getModelToken(Task.name)`".
+
+The `@InjectModel(Task.name)` is equivalent to `@Inject(getModelToken(Task.name))`.
+
+Note that the `getModelToken(Task.name)` is the same function that is used inside the `provide` field:
+
+`provide: getModelToken(Task.name)`.
+
+</Callout>
+
+7. Mock the `TasksService`'s dependencies.
+
+```ts
+describe("Tasks", () => {
+  let app: INestApplication;
+
+  // This is our mock model
+  const mockModel = {
+    find: jest.fn().mockImplementation(() => {
+      return {
+        sort: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue([]),
+      };
+    }),
+  };
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [TasksModule],
+    })
+      .overrideProvider(getModelToken(Task.name)) // -> here we override the provider
+      .useValue(mockModel) // -> with the mock model
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it("/GET tasks should return an array of tasks", async () => {
+    return request(app.getHttpServer()).get("/tasks").expect(200).expect([]);
+  });
+});
+```
+
+As you can see the `mockModel` object contains some weird looking methods. This comes from the `Jest` library - https://jestjs.io/docs/mock-functions.
+
+In short, it allows us to control the behavior of the mocked method (in this case `find`, `sort` and `lean`).
+
+This line `lean: jest.fn().mockResolvedValue([]),` means that we want to mock the `lean` method and return an empty array.
+
+And our test expects the same result here:
+
+```ts
+return request(app.getHttpServer()).get("/tasks").expect(200).expect([]); // expect([])
+```
+
+<Callout type="info" emoji="ℹ️">
+  Create a list of dummy tasks and pass it to both `mockResolvedValue` and
+  `expect` methods so you can verify that the mocked method is called correctly
+  and you get the expected result.
+</Callout>
+
+8. Run the tests and check the output.
+
+```bash
+npm run test:e2e
+```
+
+You should see something like:
+
+```
+ PASS  test/e2e/tasks.e2e-spec.ts
+  Tasks
+    ✓ /GET tasks should return an array of tasks (14 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+```
+
+## 🏋️‍♂️ Challenge: Extend the Tests
+
+Now that you have a working setup, it's time to **put your skills to the test**!
+
+Test other endpoints and see how they behave.
+Note that there are cases where the `TasksService` can `throw` an error, so you should handle them in the tests.
+
+Check the Jest + Supertest docs for more information:
+
+- https://github.com/forwardemail/supertest
+- https://jestjs.io/
